@@ -134,3 +134,60 @@ def lowerEigValue(g,n):
         2*np.cos(3/10*np.pi)*sspecial.beta(1/5,3/2)
     )
     )**(10/7)
+
+
+def eqnFiveAdjPairs(EIn, *data):
+    """
+
+    :param EIn: trial eigenvalue, in the form of [re, im]
+    :param data:  (n, g)
+    :return:
+    """
+    n,g=data
+    E = EIn[0] + 1j * EIn[1]
+    adjPairsAll=return5AdjacentPairs(g,E)
+    retValsCis=[]#in the order x2, x1
+    retValsTrans=[]# in the order x1,x2
+    retValsCisAnother=[]#in the order x2, x1, another branch
+    retValsTransAnother=[]#in the order x1, x2, another branch
+
+    #fill cis
+    for pairTmp in adjPairsAll:
+        x2Tmp,x1Tmp=pairTmp
+        intValTmp=integralQuadrature(g,E,x1Tmp,x2Tmp)
+        rstTmp=intValTmp-(n+1/2)*np.pi
+        retValsCis.append(rstTmp)
+    #fill trans
+    for pairTmp in adjPairsAll:
+        x2Tmp,x1Tmp=pairTmp
+        intValTmp=integralQuadrature(g,E,x2Tmp,x1Tmp)
+        rstTmp=intValTmp-(n+1/2)*np.pi
+        retValsTrans.append(rstTmp)
+    #fill cis another
+    for pairTmp in adjPairsAll:
+        x2Tmp,x1Tmp=pairTmp
+        intValTmp=integralQuadratureAnotherBranch(g,E,x1Tmp,x2Tmp)
+        rstTmp=intValTmp-(n+1/2)*np.pi
+        retValsCisAnother.append(rstTmp)
+    #fill trans another
+    for pairTmp in adjPairsAll:
+        x2Tmp,x1Tmp=pairTmp
+        intValTmp=integralQuadratureAnotherBranch(g,E,x2Tmp,x1Tmp)
+        rstTmp=intValTmp-(n+1/2)*np.pi
+        retValsTransAnother.append(rstTmp)
+
+    retCombined=retValsCis+retValsTrans+retValsCisAnother+retValsTransAnother
+    retSorted=sorted(retCombined,key=np.abs)
+    root0=retSorted[0]
+    return np.real(root0),np.imag(root0)
+
+
+def computeOneSolutionWith5AdjPairs(inData):
+    """
+
+    :param inData: [n,g, Eest]
+    :return: [n,g,re(E), im(E)]
+    """
+    n, g, Eest = inData
+    eVecTmp=sopt.fsolve(eqnFiveAdjPairs,[np.real(Eest), np.imag(Eest)], args=(n, g), maxfev=100, xtol=1e-6)
+    return [n,g,eVecTmp[0],eVecTmp[1]]
